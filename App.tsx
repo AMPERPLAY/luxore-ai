@@ -66,8 +66,8 @@ const App: React.FC = () => {
       <div className={`flex items-center justify-center min-h-screen p-4 ${theme === 'light' ? 'bg-slate-100 text-red-600' : 'bg-gray-900 text-red-400'}`}>
         <div className={`${theme === 'light' ? 'bg-white' : 'bg-gray-800'} p-8 rounded-lg shadow-xl text-center`}>
           <h1 className="text-2xl font-bold mb-4">Error de Configuración</h1>
-          <p>La variable de entorno API_KEY para {AI_NAME} (Gemini) no está configurada.</p>
-          <p className={`mt-2 text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>Por favor, asegúrate de que esté disponible en el entorno de ejecución.</p>
+          <p>La variable de entorno <code className="text-sm bg-red-200 dark:bg-red-800 p-1 rounded">VITE_API_KEY</code> para {AI_NAME} (Gemini) no está configurada correctamente en Vercel.</p>
+          <p className={`mt-2 text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>Por favor, verifica la configuración de "Environment Variables" en tu proyecto de Vercel y asegúrate de que el nombre sea <code>VITE_API_KEY</code>.</p>
         </div>
       </div>
     );
