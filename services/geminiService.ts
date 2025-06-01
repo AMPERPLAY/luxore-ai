@@ -1,7 +1,6 @@
-
 import { GoogleGenAI, Chat, GenerateContentResponse, Part, SendMessageParameters } from "@google/genai";
 import { TEXT_MODEL_NAME, IMAGE_MODEL_NAME, SYSTEM_INSTRUCTION } from '../constants';
-import { GroundingMetadata } from "../types";
+import { GroundingMetadata, GroundingChunk } from "../types";
 
 let ai: GoogleGenAI | undefined;
 let chatInstance: Chat | null = null;
@@ -141,53 +140,59 @@ export const generateImage = async (prompt: string): Promise<string> => {
     console.error("[GeminiService] Error in generateImage service:", error);
     let errorMessage = "Ocurrió un error desconocido durante la generación de la imagen.";
     let isQuotaError = false;
+    let isBilledUserError = false;
 
     if (error instanceof Error && typeof error.message === 'string') {
       errorMessage = error.message; // Base error message
       if (error.message.includes("429") && error.message.toUpperCase().includes("RESOURCE_EXHAUSTED")) {
         isQuotaError = true;
       }
-    } else if (typeof error === 'string' && error.includes("429") && error.toUpperCase().includes("RESOURCE_EXHAUSTED")) {
-      // Handle cases where the error might be a string directly
+      if (error.message.toLowerCase().includes("only accessible to billed users")) {
+        isBilledUserError = true;
+      }
+    } else if (typeof error === 'string') {
       errorMessage = error;
-      isQuotaError = true;
+      if (error.includes("429") && error.toUpperCase().includes("RESOURCE_EXHAUSTED")) {
+        isQuotaError = true;
+      }
+      if (error.toLowerCase().includes("only accessible to billed users")) {
+        isBilledUserError = true;
+      }
     } else if (error.error && typeof error.error === 'object') { 
-        // Handle cases where error is an object containing an 'error' sub-object (like from API response)
         if (error.error.code === 429 || (typeof error.error.status === 'string' && error.error.status.toUpperCase() === "RESOURCE_EXHAUSTED")) {
             isQuotaError = true;
-            if (error.error.message) {
-                errorMessage = error.error.message;
-            }
+        }
+        if (error.error.message && typeof error.error.message === 'string' && error.error.message.toLowerCase().includes("only accessible to billed users")) {
+            isBilledUserError = true;
+        }
+        if (error.error.message) {
+            errorMessage = error.error.message;
         }
     }
     
-    if (isQuotaError) {
-      // Provide a more user-friendly message for quota errors
-      throw new Error("Se ha excedido tu cuota actual de la API de Gemini. Por favor, revisa tu plan y detalles de facturación en Google Cloud. Para más información: https://ai.google.dev/gemini-api/docs/rate-limits");
+    if (isBilledUserError) {
+      throw new Error("La API de generación de imágenes de Gemini (Imagen API) requiere una cuenta con facturación activa en Google Cloud. Por favor, verifica tu configuración de facturación.");
+    } else if (isQuotaError) {
+      throw new Error("Se ha excedido tu cuota actual para la API de generación de imágenes de Gemini (Imagen API). Por favor, revisa tu plan y detalles de facturación en Google Cloud. Esto suele requerir una cuenta con facturación activa. Para más información: https://ai.google.dev/gemini-api/docs/rate-limits");
     }
 
     // For other errors, try to construct a meaningful message
     if (error.message) {
-        // If the error is one of our own early-exit messages, re-throw it directly.
         if (errorMessage.startsWith("No se pudo generar la imagen") || errorMessage.startsWith("El prompt para generar la imagen")) {
              // No need to re-wrap, it's already specific.
         } 
-        // If it's an API error message from the SDK (often includes "got status:")
         else if (errorMessage.includes("got status:")) { 
             errorMessage = `Error de la API de Gemini: ${errorMessage}`;
         } 
-        // For SDK errors that might have a 'details' field
         else if (error.details) { 
              errorMessage = `Error de la API de Gemini: ${error.details}`;
         } 
-        // General wrapper for other error messages
         else {
             errorMessage = `Error de la API de Gemini: ${errorMessage || "No se pudo procesar la solicitud."}`;
         }
     } else if (typeof error === 'string') {
         errorMessage = `Error de la API de Gemini: ${error}`;
     }
-    // Fallback to a generic message if no specific message could be constructed
     else if (errorMessage === "Ocurrió un error desconocido durante la generación de la imagen." && !(error instanceof Error && error.message)) {
         errorMessage = "Error de la API de Gemini: No se pudo procesar la solicitud. Revise la consola para más detalles.";
     }

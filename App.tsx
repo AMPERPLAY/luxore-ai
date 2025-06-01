@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { GEMINI_API_KEY, AI_NAME, AI_SLOGAN } from './constants';
 import { SunIcon } from './components/icons/SunIcon';

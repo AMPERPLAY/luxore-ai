@@ -1,4 +1,3 @@
-
 export const GEMINI_API_KEY = process.env.API_KEY || "";
 
 export const TEXT_MODEL_NAME = 'gemini-2.5-flash-preview-04-17'; // This model supports multimodal input
