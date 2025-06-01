@@ -1,22 +1,25 @@
 
 import { GoogleGenAI, Chat, GenerateContentResponse, Part, SendMessageParameters } from "@google/genai";
-import { TEXT_MODEL_NAME, IMAGE_MODEL_NAME, SYSTEM_INSTRUCTION, GEMINI_API_KEY } from '../constants';
+import { TEXT_MODEL_NAME, IMAGE_MODEL_NAME, SYSTEM_INSTRUCTION } from '../constants';
 import { GroundingMetadata } from "../types";
 
-let ai: GoogleGenAI;
+let ai: GoogleGenAI | undefined;
 let chatInstance: Chat | null = null;
 
-// Initialize AI instance immediately
-if (GEMINI_API_KEY) {
-  ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+// Initialize AI instance immediately using process.env.API_KEY directly
+const apiKeyFromEnv = process.env.API_KEY;
+
+if (apiKeyFromEnv) {
+  ai = new GoogleGenAI({ apiKey: apiKeyFromEnv });
 } else {
-  console.error("CRITICAL: GEMINI_API_KEY is not set. The application will not function correctly.");
+  console.error("CRITICAL: process.env.API_KEY is not set. The Gemini API client could not be initialized.");
+  // ai remains undefined, functions below will throw errors if called.
 }
 
 
 export const getChatInstance = (): Chat => {
   if (!ai) {
-      throw new Error("Gemini AI not initialized. API Key might be missing.");
+      throw new Error("Gemini AI not initialized. Ensure process.env.API_KEY is set and valid.");
   }
   if (!chatInstance) {
     chatInstance = ai.chats.create({
@@ -31,7 +34,7 @@ export const getChatInstance = (): Chat => {
 
 export const startNewChat = (): Chat => {
   if (!ai) {
-    throw new Error("Gemini AI not initialized. API Key might be missing.");
+    throw new Error("Gemini AI not initialized. Ensure process.env.API_KEY is set and valid.");
   }
   chatInstance = ai.chats.create({
       model: TEXT_MODEL_NAME,
@@ -48,6 +51,8 @@ export const sendMessageStream = async (
   inputParts?: Part[],
   chatContext?: string // Added chatContext parameter
 ): Promise<AsyncIterable<GenerateContentResponse>> => {
+  // 'ai' instance is not directly used here, but 'chat' instance relies on 'ai' being initialized.
+  // The functions creating 'chat' (getChatInstance, startNewChat) already check for 'ai'.
   try {
     let textForSearchCheck = messageText;
     if (inputParts) {
@@ -97,7 +102,7 @@ export const sendMessageStream = async (
 
 export const generateImage = async (prompt: string): Promise<string> => {
   if (!ai) { 
-    throw new Error("Gemini AI (for image generation) not initialized. API Key might be missing or invalid at startup.");
+    throw new Error("Gemini AI (for image generation) not initialized. Ensure process.env.API_KEY is set and valid.");
   }
 
   try {
