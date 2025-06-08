@@ -317,7 +317,7 @@ const App: React.FC = () => {
         </div>
       </header>
       
-      <main className="flex-grow overflow-hidden container mx-auto w-full">
+      <main className="flex-grow overflow-y-auto container mx-auto w-full">
         {renderActiveTabPage()}
       </main>
       
