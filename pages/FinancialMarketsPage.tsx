@@ -4,12 +4,11 @@ import { ChatInterface } from '../components/ChatInterface';
 import { AI_NAME } from '../constants';
 
 interface FinancialMarketsPageProps {
-  selectedTimezone: string;
+  // selectedTimezone: string; // No longer passed
 }
 
-const FinancialMarketsPage: React.FC<FinancialMarketsPageProps> = ({ selectedTimezone }) => {
-  // You can use selectedTimezone here if needed in the future, for example, by passing it to ChatInterface
-  // console.log('FinancialMarketsPage selectedTimezone:', selectedTimezone);
+const FinancialMarketsPage: React.FC<FinancialMarketsPageProps> = (/* { selectedTimezone } */) => {
+  // console.log('FinancialMarketsPage selectedTimezone:', selectedTimezone); // Prop removed
   const initialGreeting = `Bienvenido a la sección de Mercados Financieros de ${AI_NAME}. Soy tu analista de élite, preparado para proporcionarte datos en tiempo real, análisis técnico y fundamental, resúmenes de noticias y explicaciones detalladas sobre el mundo financiero. Mi objetivo es ofrecerte información precisa y objetiva, sin asesoramiento de inversión. ¿En qué activo, sector o concepto financiero podemos profundizar hoy?`;
 
   return (

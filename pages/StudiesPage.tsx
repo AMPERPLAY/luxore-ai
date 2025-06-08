@@ -6,10 +6,10 @@ import { AI_NAME } from '../constants';
 type ActiveStudyTool = 'mathematics' | 'physics' | 'chemistry' | 'biology' | 'english' | null;
 
 interface StudiesPageProps {
-  selectedTimezone: string;
+  // selectedTimezone: string; // No longer passed
 }
 
-const StudiesPage: React.FC<StudiesPageProps> = ({ selectedTimezone }) => {
+const StudiesPage: React.FC<StudiesPageProps> = (/* { selectedTimezone } */) => {
   const [activeTool, setActiveTool] = useState<ActiveStudyTool>(null);
 
   const tools: { id: ActiveStudyTool; label: string; greeting: string, context: string }[] = [

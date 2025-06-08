@@ -11,14 +11,14 @@ import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
 import { UserCircleIcon } from './components/icons/UserCircleIcon';
 import { LogoutIcon } from './components/icons/LogoutIcon';
-import { GlobeAltIcon } from './components/icons/GlobeAltIcon'; 
+// import { GlobeAltIcon } from './components/icons/GlobeAltIcon'; // No longer needed
 
 type ActiveTab = 'general' | 'studies' | 'financial' | 'admin'; 
 
-const getTimezoneFriendlyName = (tz: string) => {
-  if (tz === 'Local') return 'Local (Navegador)';
-  return tz.replace(/_/g, ' ').split('/').pop() || tz;
-};
+// const getTimezoneFriendlyName = (tz: string) => { // No longer needed
+//   if (tz === 'Local') return 'Local (Navegador)';
+//   return tz.replace(/_/g, ' ').split('/').pop() || tz;
+// };
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState(() => {
@@ -40,24 +40,24 @@ const App: React.FC = () => {
   const [showShareFeedback, setShowShareFeedback] = useState(false);
 
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [selectedTimezone, setSelectedTimezone] = useState<string>('Local');
+  // const [selectedTimezone, setSelectedTimezone] = useState<string>('Local'); // No longer needed
   
-  const availableTimezones = React.useMemo(() => {
-    let zones: string[] = ['Local', 'UTC', 'America/Guayaquil', 'America/New_York', 'Europe/London', 'Asia/Tokyo'];
-    try {
-      const supported = (Intl as any).supportedValuesOf?.('timeZone') as string[] || [];
-      const commonSuffixes = ['New_York', 'London', 'Paris', 'Tokyo', 'Sydney', 'Moscow', 'Dubai', 'Guayaquil', 'Mexico_City', 'Buenos_Aires', 'Sao_Paulo'];
-      const filteredSupported = supported.filter(tz => commonSuffixes.some(suffix => tz.endsWith(suffix)) || tz.startsWith('America/') || tz.startsWith('Europe/') || tz.startsWith('Asia/'));
-      const importantZones = ['UTC', 'America/Guayaquil', 'America/New_York', 'Europe/London', 'Asia/Tokyo'];
-      zones = ['Local', ...new Set([...importantZones, ...filteredSupported])].sort();
-    } catch (e) {
-      console.warn("Error processing timezones (Intl.supportedValuesOf might have failed), using fallback list.", e);
-    }
-    if (!zones.includes('America/Guayaquil')) {
-        zones.splice(1, 0, 'America/Guayaquil'); 
-    }
-    return zones;
-  }, []);
+  // const availableTimezones = React.useMemo(() => { // No longer needed
+  //   let zones: string[] = ['Local', 'UTC', 'America/Guayaquil', 'America/New_York', 'Europe/London', 'Asia/Tokyo'];
+  //   try {
+  //     const supported = (Intl as any).supportedValuesOf?.('timeZone') as string[] || [];
+  //     const commonSuffixes = ['New_York', 'London', 'Paris', 'Tokyo', 'Sydney', 'Moscow', 'Dubai', 'Guayaquil', 'Mexico_City', 'Buenos_Aires', 'Sao_Paulo'];
+  //     const filteredSupported = supported.filter(tz => commonSuffixes.some(suffix => tz.endsWith(suffix)) || tz.startsWith('America/') || tz.startsWith('Europe/') || tz.startsWith('Asia/'));
+  //     const importantZones = ['UTC', 'America/Guayaquil', 'America/New_York', 'Europe/London', 'Asia/Tokyo'];
+  //     zones = ['Local', ...new Set([...importantZones, ...filteredSupported])].sort();
+  //   } catch (e) {
+  //     console.warn("Error processing timezones (Intl.supportedValuesOf might have failed), using fallback list.", e);
+  //   }
+  //   if (!zones.includes('America/Guayaquil')) {
+  //       zones.splice(1, 0, 'America/Guayaquil'); 
+  //   }
+  //   return zones;
+  // }, []);
 
 
   useEffect(() => {
@@ -98,7 +98,7 @@ const App: React.FC = () => {
     let currentUrl = '';
     try {
       currentUrl = window.location.href;
-      new URL(currentUrl); // Valida si la URL es estructuralmente correcta
+      new URL(currentUrl); 
     } catch (e) {
       console.error("URL de la ventana no válida:", e, "URL problemática:", currentUrl);
       alert("No se puede compartir: la URL actual de la página no es válida.");
@@ -114,22 +114,19 @@ const App: React.FC = () => {
     try {
       if (navigator.share) {
         await navigator.share(shareData);
-        // Opcional: mostrar feedback de éxito si navigator.share no lo provee.
       } else {
-        // Fallback para navegadores que no soportan navigator.share
         if (!navigator.clipboard) {
           alert(`Tu navegador no soporta la función de compartir ni la de copiar al portapapeles.\nPor favor, copia la URL manualmente: ${shareData.url}`);
           return;
         }
         await navigator.clipboard.writeText(shareData.url);
-        setShowShareFeedback(true); // "¡Enlace ... copiado!"
+        setShowShareFeedback(true); 
         setTimeout(() => setShowShareFeedback(false), 2500);
       }
     } catch (error: any) {
       console.error('Error al compartir o copiar inicialmente:', error);
       
       if (error.name === 'AbortError') {
-        // El usuario canceló la operación de compartir nativa.
         console.log('Compartir cancelado por el usuario.');
         return; 
       }
@@ -137,11 +134,9 @@ const App: React.FC = () => {
       let specificErrorHandled = false;
       if (error.message && error.message.toLowerCase().includes('invalid url')) {
          console.warn(`navigator.share consideró la URL "${shareData.url}" inválida. Intentando copiar al portapapeles.`);
-         specificErrorHandled = true; // El error específico fue logueado, se procede al fallback.
+         specificErrorHandled = true; 
       }
 
-      // Intento de copiar al portapapeles como último recurso si navigator.share falló por cualquier razón (incluida Invalid URL)
-      // o si navigator.share no existe.
       if (!navigator.clipboard) {
         alert(`Tu navegador no soporta la función de copiar al portapapeles.\nPor favor, copia la URL manualmente: ${shareData.url}`);
         return;
@@ -155,7 +150,7 @@ const App: React.FC = () => {
         let alertMessage = `No se pudo compartir ni copiar.\nPor favor, copia la URL manualmente: ${shareData.url}`;
         if (copyError.name === 'NotAllowedError' || (copyError.message && (copyError.message.toLowerCase().includes('permission denied') || copyError.message.toLowerCase().includes('write permission denied')))) {
           alertMessage = `El permiso para escribir en el portapapeles fue denegado.\nPor favor, copia la URL manualmente: ${shareData.url}\n\nAsegúrate de que la página se sirve sobre HTTPS (o es localhost) y que tu navegador tiene permisos para acceder al portapapeles.`;
-        } else if (specificErrorHandled) { // Si el error original fue 'Invalid URL' de navigator.share
+        } else if (specificErrorHandled) { 
            alertMessage = `La URL "${shareData.url}" no pudo ser compartida directamente y también falló la copia al portapapeles. Por favor, copia la URL manualmente.`;
         }
         alert(alertMessage);
@@ -168,14 +163,13 @@ const App: React.FC = () => {
       weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
       hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true
     };
-    if (timeZone && timeZone !== 'Local') {
+    if (timeZone && timeZone !== 'Local') { // This condition will likely not be met for UI display anymore
       options.timeZone = timeZone;
     }
     try {
       return new Intl.DateTimeFormat('es-ES', options).format(date);
     } catch (e) {
       console.error(`Error formatting date for timezone ${timeZone}:`, e);
-      // Fallback to local timezone if the provided one is invalid
       options.timeZone = undefined; 
       return new Intl.DateTimeFormat('es-ES', options).format(date);
     }
@@ -199,7 +193,8 @@ const App: React.FC = () => {
   }
 
   const renderActiveTabPage = () => {
-    const pageProps = { selectedTimezone };
+    // const pageProps = { selectedTimezone }; // selectedTimezone no longer passed
+    const pageProps = {};
     switch (activeTab) {
       case 'studies': 
         return <StudiesPage {...pageProps} />;
@@ -255,11 +250,11 @@ const App: React.FC = () => {
                         <div className={theme === 'light' ? 'text-slate-600' : 'text-slate-400'}>
                            {formatDateTime(currentTime)} <span className="font-semibold">(Local)</span>
                         </div>
-                        {selectedTimezone !== 'Local' && (
+                        {/* {selectedTimezone !== 'Local' && ( // Removed this block
                              <div className={theme === 'light' ? 'text-accentBlue-600' : 'text-accentBlue-400'}>
                                 {formatDateTime(currentTime, selectedTimezone)} <span className="font-semibold">({getTimezoneFriendlyName(selectedTimezone)})</span>
                              </div>
-                        )}
+                        )} */}
                     </div>
                 </div>
 
@@ -268,25 +263,24 @@ const App: React.FC = () => {
                     <p className={`text-xs md:text-sm ${theme === 'light' ? 'text-accentBlue-600' : 'text-accentBlue-300'} opacity-90`}>{AI_SLOGAN}</p>
                 </div>
 
-                <div className="flex flex-col items-end space-y-2 min-w-[180px] md:min-w-[200px]">
-                    <div className="flex items-center space-x-1 md:space-x-2">
-                        <button
-                            onClick={handleShare}
-                            className={`p-1.5 md:p-2 rounded-full transition-colors duration-200 ${theme === 'light' ? 'text-accentBlue-700 hover:bg-accentBlue-100' : 'text-accentBlue-400 hover:bg-slate-700'}`}
-                            aria-label="Compartir Luxoré AI"
-                            title="Compartir"
-                        >
-                            <ShareIcon className="w-5 h-5 md:w-6 md:h-6" />
-                        </button>
-                        <button
-                            onClick={toggleTheme}
-                            className={`p-1.5 md:p-2 rounded-full transition-colors duration-200 ${theme === 'light' ? 'text-accentBlue-700 hover:bg-accentBlue-100' : 'text-accentBlue-400 hover:bg-slate-700'}`}
-                            aria-label={theme === 'light' ? "Activar modo oscuro" : "Activar modo claro"}
-                        >
-                            {theme === 'light' ? <MoonIcon className="w-5 h-5 md:w-6 md:h-6" /> : <SunIcon className="w-5 h-5 md:w-6 md:h-6" />}
-                        </button>
-                    </div>
-                    <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-1 md:space-x-2 min-w-[100px] md:min-w-[120px] justify-end"> {/* Adjusted min-w and removed flex-col */}
+                    <button
+                        onClick={handleShare}
+                        className={`p-1.5 md:p-2 rounded-full transition-colors duration-200 ${theme === 'light' ? 'text-accentBlue-700 hover:bg-accentBlue-100' : 'text-accentBlue-400 hover:bg-slate-700'}`}
+                        aria-label="Compartir Luxoré AI"
+                        title="Compartir"
+                    >
+                        <ShareIcon className="w-5 h-5 md:w-6 md:h-6" />
+                    </button>
+                    <button
+                        onClick={toggleTheme}
+                        className={`p-1.5 md:p-2 rounded-full transition-colors duration-200 ${theme === 'light' ? 'text-accentBlue-700 hover:bg-accentBlue-100' : 'text-accentBlue-400 hover:bg-slate-700'}`}
+                        aria-label={theme === 'light' ? "Activar modo oscuro" : "Activar modo claro"}
+                    >
+                        {theme === 'light' ? <MoonIcon className="w-5 h-5 md:w-6 md:h-6" /> : <SunIcon className="w-5 h-5 md:w-6 md:h-6" />}
+                    </button>
+                    {/* Timezone selector removed from here */}
+                    {/* <div className="flex items-center space-x-1">
                         <GlobeAltIcon className={`w-4 h-4 ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`} />
                         <select
                             value={selectedTimezone}
@@ -302,7 +296,7 @@ const App: React.FC = () => {
                                 <option key={tz} value={tz}>{getTimezoneFriendlyName(tz)}</option>
                             ))}
                         </select>
-                    </div>
+                    </div> */}
                 </div>
             </div>
             <nav className={`flex border-t ${theme === 'light' ? 'border-slate-200' : 'border-slate-700'} overflow-x-auto`}>
@@ -326,7 +320,7 @@ const App: React.FC = () => {
       </footer>
 
       {showShareFeedback && (
-        <div className="feedback-message show !bg-green-500"> {/* Ensuring Tailwind takes precedence */}
+        <div className="feedback-message show !bg-green-500">
           ¡Enlace de Luxoré AI copiado al portapapeles!
         </div>
       )}

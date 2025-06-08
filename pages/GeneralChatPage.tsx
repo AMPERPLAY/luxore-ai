@@ -4,12 +4,11 @@ import { ChatInterface } from '../components/ChatInterface';
 import { AI_NAME } from '../constants';
 
 interface GeneralChatPageProps {
-  selectedTimezone: string;
+  // selectedTimezone: string; // No longer passed
 }
 
-const GeneralChatPage: React.FC<GeneralChatPageProps> = ({ selectedTimezone }) => {
-  // You can use selectedTimezone here if needed in the future, for example, by passing it to ChatInterface
-  // console.log('GeneralChatPage selectedTimezone:', selectedTimezone);
+const GeneralChatPage: React.FC<GeneralChatPageProps> = (/* { selectedTimezone } */) => {
+  // console.log('GeneralChatPage selectedTimezone:', selectedTimezone); // Prop removed
   return (
     <div className="h-full flex flex-col p-0 md:p-0"> {/* Ensure page takes full height within main */}
       <ChatInterface 
