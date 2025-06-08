@@ -18,7 +18,7 @@ interface ImageReferencePreviewProps {
 
 const ImageReferencePreview: React.FC<ImageReferencePreviewProps> = ({ imageData, onRemove }) => {
   return (
-    <div className="relative group w-20 h-20 border border-gray-400 dark:border-gray-500 rounded-md overflow-hidden shadow-sm">
+    <div className="relative group w-20 h-20 border border-slate-400 dark:border-slate-500 rounded-md overflow-hidden shadow-sm">
       <img src={imageData.dataUrl} alt={imageData.file.name} className="w-full h-full object-cover" />
       <button
         onClick={onRemove}
@@ -38,6 +38,8 @@ interface ChatInterfaceProps {
   chatContext?: string;
   onAiMessageGenerated?: (message: ChatMessage) => void;
 }
+
+const MAX_TEXTAREA_HEIGHT = 150; 
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMessage, chatContext, onAiMessageGenerated }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -59,6 +61,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+
+  const adjustTextareaHeight = useCallback(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'; 
+      const scrollHeight = textareaRef.current.scrollHeight;
+      textareaRef.current.style.height = `${Math.min(scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
+      textareaRef.current.style.overflowY = scrollHeight > MAX_TEXTAREA_HEIGHT ? 'auto' : 'hidden';
+    }
+  }, []);
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [inputValue, adjustTextareaHeight]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -100,6 +117,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
     setPendingVideoPlanDescription(null);
     setPendingMultiImageDescription(null);
     setReferenceImagesData([]);
+    setInputValue(''); 
     setChatSession(startNewChat());
     if (onAiMessageGenerated) {
         onAiMessageGenerated(newGreetingMsg);
@@ -166,9 +184,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
     }
   };
 
-  const handlePaste = useCallback((event: React.ClipboardEvent<HTMLInputElement>) => {
+  const handlePaste = useCallback((event: React.ClipboardEvent<HTMLTextAreaElement>) => {
     if (referenceImagesData.length >= 3) {
-      return; // Max images reached, do nothing further for images
+      return; 
     }
 
     const items = event.clipboardData?.items;
@@ -187,22 +205,22 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
             break; 
           }
 
-          if (file.size > 4 * 1024 * 1024) { // 4MB limit
+          if (file.size > 4 * 1024 * 1024) { 
             alert(`La imagen "${file.name}" pegada es demasiado grande (máx 4MB) y no fue añadida.`);
-            continue; // Skip this file, try next if any
+            continue; 
           }
 
           const reader = new FileReader();
           reader.onload = (e) => {
             setReferenceImagesData(prev => [...prev, { file, dataUrl: e.target?.result as string }]);
-            triggerReferenceFeedback(); // Give feedback that image was added
+            triggerReferenceFeedback(); 
           };
           reader.readAsDataURL(file);
         }
       }
     }
     if (imagePastedThisEvent) {
-        event.preventDefault(); // Prevent pasting file path as text ONLY if an image was successfully processed
+        // event.preventDefault(); // Uncomment if you want to prevent text pasting if an image was pasted.
     }
   }, [referenceImagesData]);
 
@@ -267,7 +285,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
       setMessages(prev => [...prev, loadingMsg]); 
 
       try {
-        const imageUrl = await generateImage(prompt); // API Key no longer passed
+        const imageUrl = await generateImage(prompt); 
         const newImageMsg: ChatMessage = { id: Date.now().toString(), role: ChatRole.MODEL, imageUrl, imagePrompt: prompt, timestamp: new Date() };
         
         let finalMsgForCallback: ChatMessage | undefined;
@@ -284,7 +302,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
         console.error(`${type} image generation error:`, error);
         let displayErrorMessage = `Error al generar imagen (${type}): ${error instanceof Error ? error.message : 'Error desconocido'}`;
         if (error instanceof Error && error.message.startsWith("Se ha excedido tu cuota actual de la API de Gemini")) {
-            displayErrorMessage = error.message; // Use the direct quota message
+            displayErrorMessage = error.message; 
         }
         const errorMsg: ChatMessage = { id: Date.now().toString(), role: ChatRole.MODEL, text: displayErrorMessage, isError: true, timestamp: new Date() };
         
@@ -330,7 +348,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
     if (pendingVideoPlanDescription && (lowerUserMessage === 'sí' || lowerUserMessage === 'si' || lowerUserMessage === 'yes')) {
       const videoPlanUserPrompt = `Sí, por favor genera el plan de video detallado para el concepto: "${pendingVideoPlanDescription}".`;
       setPendingVideoPlanDescription(null);
-      await streamAiResponse(videoPlanUserPrompt, chatSession); // Pass chatContext here too
+      await streamAiResponse(videoPlanUserPrompt, chatSession); 
       return;
     } else if (pendingVideoPlanDescription && (lowerUserMessage === 'no')) {
       setPendingVideoPlanDescription(null);
@@ -354,10 +372,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
       messageParts.push({ text: userMessageText }); 
     }
     
-    await streamAiResponse(userMessageText, chatSession, messageParts, chatContext); // Pass chatContext
+    await streamAiResponse(userMessageText, chatSession, messageParts, chatContext); 
   };
 
-  const streamAiResponse = async (promptText: string, session: Chat, parts?: Part[], currentChatContext?: string) => { // Added currentChatContext
+  const streamAiResponse = async (promptText: string, session: Chat, parts?: Part[], currentChatContext?: string) => { 
     const aiResponseId = `ai-response-${Date.now()}`;
     setMessages(prev => [...prev, { id: aiResponseId, role: ChatRole.MODEL, text: '', isLoading: true, timestamp: new Date() }]);
     
@@ -365,7 +383,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
     let groundingMetadata: GroundingMetadata | null = null;
     
     try {
-      // Pass currentChatContext to sendMessageStream
       const stream = await sendMessageStream(session, promptText, parts, currentChatContext); 
       for await (const chunk of stream) {
         const chunkText = chunk.text; 
@@ -420,25 +437,33 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
     }
         
     setIsLoading(false);
+    requestAnimationFrame(adjustTextareaHeight); 
   }
 
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if ((inputValue.trim() || referenceImagesData.length > 0) && !isLoading) {
       processUserMessage(inputValue.trim());
     }
   };
 
+  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
   return (
-    <div className="flex flex-col h-full bg-slate-100 dark:bg-gray-800/50 p-0 md:p-0 rounded-lg shadow-xl mt-0">
+    <div className="flex flex-col h-full bg-slate-100 dark:bg-slate-800/50 p-0 md:p-0 rounded-lg shadow-xl mt-0">
       {showCopyFeedback && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg z-50 text-sm">
           ¡Texto copiado al portapapeles!
         </div>
       )}
       {showReferenceFeedback && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-blue-500 text-white px-4 py-2 rounded-md shadow-lg z-50 text-sm">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-accentBlue-500 text-white px-4 py-2 rounded-md shadow-lg z-50 text-sm">
           ¡Imagen añadida como referencia!
         </div>
       )}
@@ -456,27 +481,29 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
       </div>
 
       {pendingImageDescription && (
-        <div className="mb-2 mx-4 md:mx-2 p-3 bg-purple-100 dark:bg-purple-900/50 border border-purple-300 dark:border-purple-700 rounded-lg text-sm text-purple-700 dark:text-purple-200">
+        <div className="mb-2 mx-4 md:mx-2 p-3 bg-accentBlue-100 dark:bg-accentBlue-900/50 border border-accentBlue-300 dark:border-accentBlue-700 rounded-lg text-sm text-accentBlue-700 dark:text-accentBlue-200">
           <p><span className="font-semibold">{AI_NAME}</span> está esperando tu confirmación para generar la imagen: "<em>{pendingImageDescription}</em>"</p>
           <p>Responde "Sí" o "No".</p>
         </div>
       )}
       {pendingMultiImageDescription && (
         <div className="mb-2 mx-4 md:mx-2 p-3 bg-indigo-100 dark:bg-indigo-900/50 border border-indigo-300 dark:border-indigo-700 rounded-lg text-sm text-indigo-700 dark:text-indigo-200">
+          {/* Note: Indigo is kept for multi-image for differentiation, could be accentBlue too */}
           <p><span className="font-semibold">{AI_NAME}</span> está esperando tu confirmación para generar la imagen combinada: "<em>{pendingMultiImageDescription}</em>"</p>
           <p>Responde "Sí" o "No".</p>
         </div>
       )}
       {pendingVideoPlanDescription && (
         <div className="mb-2 mx-4 md:mx-2 p-3 bg-teal-100 dark:bg-teal-900/50 border border-teal-300 dark:border-teal-700 rounded-lg text-sm text-teal-700 dark:text-teal-200">
+          {/* Note: Teal is kept for video plan for differentiation, could be accentBlue too */}
           <p><span className="font-semibold">{AI_NAME}</span> está esperando tu confirmación para generar el plan de video: "<em>{pendingVideoPlanDescription}</em>"</p>
           <p>Responde "Sí" o "No".</p>
         </div>
       )}
 
       {referenceImagesData.length > 0 && (
-        <div className="mb-2 mx-4 md:mx-2 p-3 bg-gray-200 dark:bg-gray-700/60 rounded-lg">
-          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Imágenes de referencia (máx. 3):</p>
+        <div className="mb-2 mx-4 md:mx-2 p-3 bg-slate-200 dark:bg-slate-700/60 rounded-lg">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">Imágenes de referencia (máx. 3):</p>
           <div className="flex flex-wrap gap-2">
             {referenceImagesData.map((imgData, index) => (
               <ImageReferencePreview 
@@ -489,11 +516,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex items-center gap-2 md:gap-3 bg-white dark:bg-gray-700 p-3 rounded-b-lg md:rounded-lg shadow-md border-t border-slate-200 dark:border-gray-600">
+      <form onSubmit={handleSubmit} className="flex items-end gap-2 md:gap-3 bg-white dark:bg-slate-700 p-3 rounded-b-lg md:rounded-lg shadow-md border-t border-slate-200 dark:border-slate-600">
         <button
           type="button"
           onClick={handleNewChat}
-          className="p-2 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors duration-150"
+          className="p-2 text-slate-500 dark:text-slate-400 hover:text-accentBlue-600 dark:hover:text-accentBlue-400 transition-colors duration-150 self-center"
           title="Iniciar Nuevo Chat"
           aria-label="Iniciar Nuevo Chat"
         >
@@ -512,7 +539,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
         <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-150"
+            className="p-2 text-slate-500 dark:text-slate-400 hover:text-accentBlue-600 dark:hover:text-accentBlue-400 transition-colors duration-150 self-center"
             title="Añadir imágenes de referencia (hasta 3)"
             aria-label="Añadir imágenes de referencia"
             disabled={referenceImagesData.length >= 3 || isLoading}
@@ -520,20 +547,23 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
             <ImageIcon className="w-6 h-6" />
         </button>
 
-        <input
-          type="text"
+        <textarea
+          ref={textareaRef}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleTextareaKeyDown}
           onPaste={handlePaste}
           placeholder={referenceImagesData.length > 0 ? `Describe cómo usar las imágenes para ${AI_NAME}...` : `Escribe tu mensaje a ${AI_NAME}...`}
-          className="flex-grow p-3 bg-slate-100 dark:bg-gray-600 text-slate-800 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none placeholder-gray-500 dark:placeholder-gray-400"
+          className="flex-grow p-3 bg-slate-100 dark:bg-slate-600 text-slate-800 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-accentBlue-500 focus:outline-none placeholder-slate-500 dark:placeholder-slate-400 resize-none overflow-hidden min-h-[44px]"
+          rows={1}
+          style={{ maxHeight: `${MAX_TEXTAREA_HEIGHT}px` }}
           disabled={isLoading}
           aria-label="Entrada de mensaje"
         />
         <button
           type="submit"
           disabled={isLoading || (!inputValue.trim() && referenceImagesData.length === 0)}
-          className="p-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg disabled:bg-gray-400 dark:disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center"
+          className="p-3 bg-accentBlue-600 hover:bg-accentBlue-700 text-white rounded-lg disabled:bg-slate-400 dark:disabled:bg-slate-500 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center self-center"
           aria-label={isLoading ? "Enviando mensaje" : "Enviar mensaje"}
         >
           {isLoading ? <LoadingSpinner className="w-5 h-5" /> : <SendIcon className="w-5 h-5" />}

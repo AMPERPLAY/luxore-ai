@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>Luxoré AI - Tu Asistente IA de Élite</title>
-  <meta name="description" content="Luxoré AI: Tu asistente IA de élite. Experimenta la luz y grandeza en la generación de texto, imágenes y planificación profesional, con funciones avanzadas y un diseño de lujo.">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Experimenta la IA de élite con Luxoré: generación avanzada de texto, imágenes impactantes, planificación profesional y asistencia académica, todo en un diseño de lujo.">
+  <meta name="theme-color" content="#1A5AFF"> <!-- accentBlue-600 -->
 
   <!-- Favicons e Iconos de App (basado en lo que proporcionaste) -->
   <link rel="apple-touch-icon" sizes="57x57" href="/apple-icon-57x57.png">
@@ -24,7 +24,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="icon" href="/favicon.ico"> 
   <link rel="manifest" href="/manifest.json">
-  <meta name="msapplication-TileColor" content="#ffffff">
+  <meta name="msapplication-TileColor" content="#1A5AFF"> <!-- accentBlue-600 -->
   <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
   <!-- Fin Favicons e Iconos de App -->
 
@@ -36,13 +36,15 @@
   <meta property="og:image" content="https://luxore-ai-amperplays-projects.vercel.app/og-image.png"> 
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="Luxoré AI">
+
 
   <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://luxore-ai-amperplays-projects.vercel.app/">
-  <meta property="twitter:title" content="Luxoré AI - Luz y Grandeza en Cada Instante">
-  <meta property="twitter:description" content="Experimenta la IA de élite con Luxoré: generación avanzada de texto, imágenes impactantes, planificación profesional y asistencia académica, todo en un diseño de lujo.">
-  <meta property="twitter:image" content="https://luxore-ai-amperplays-projects.vercel.app/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://luxore-ai-amperplays-projects.vercel.app/">
+  <meta name="twitter:title" content="Luxoré AI - Luz y Grandeza en Cada Instante">
+  <meta name="twitter:description" content="Experimenta la IA de élite con Luxoré: generación avanzada de texto, imágenes impactantes, planificación profesional y asistencia académica, todo en un diseño de lujo.">
+  <meta name="twitter:image" content="https://luxore-ai-amperplays-projects.vercel.app/og-image.png">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -57,16 +59,68 @@
       width: 10px;
     }
     ::-webkit-scrollbar-track {
-      @apply bg-slate-200 dark:bg-gray-800;
+      @apply bg-slate-200 dark:bg-slate-800; /* Updated to slate */
     }
     ::-webkit-scrollbar-thumb {
-      @apply bg-slate-400 dark:bg-gray-600 rounded-md;
+      @apply bg-slate-400 dark:bg-slate-600 rounded-md; /* Updated to slate */
     }
     ::-webkit-scrollbar-thumb:hover {
-      @apply bg-slate-500 dark:bg-gray-500;
+      @apply bg-slate-500 dark:bg-slate-500; /* Updated to slate */
     }
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Feedback message style */
+    .feedback-message {
+      position: fixed;
+      top: 80px; /* Increased from 20px to avoid overlap with header */
+      left: 50%;
+      transform: translateX(-50%);
+      /* Tailwind classes will be preferred, but keep as fallback for JS-driven elements */
+      background-color: #28a745; /* Green for success */
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 1000;
+      font-size: 0.875rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .feedback-message.show {
+      opacity: 1;
+      visibility: visible;
+    }
   </style>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          accentBlue: {
+            50: '#EAF2FF',
+            100: '#D6E6FF',
+            200: '#ADC8FF',
+            300: '#84AAFF',
+            400: '#5B8CFF', // Brighter accent for text/icons on dark
+            500: '#326EFF', // Main interactive color
+            600: '#1A5AFF', // Primary button color
+            700: '#0B48D9', // Darker for text on light, button hover
+            800: '#0838A6',
+            900: '#062B7F',
+            950: '#041F5C'
+          },
+          // We will use 'slate' directly in classes instead of remapping 'gray'
+          // slate: tailwind.colors.slate, // This line is not needed if using 'slate' classes
+        },
+        fontFamily: {
+          sans: ['Inter', 'sans-serif'],
+        },
+      }
+    }
+  }
+</script>
 <script type="importmap">
 {
   "imports": {

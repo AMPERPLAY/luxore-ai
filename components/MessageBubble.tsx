@@ -16,16 +16,13 @@ interface MessageBubbleProps {
   onUseImageAsReference: (imageUrl: string) => void;
 }
 
-// Explicit type for the props received by the custom 'code' renderer
-// 'node' and 'inline' are special props from react-markdown
-// React.ComponentPropsWithoutRef<'code'> provides standard HTML attributes for <code>
 type CodeRendererProps = {
-  node: any; // Actually 'Element' from 'hast' but 'any' simplifies here
+  node: any; 
   inline?: boolean;
 } & React.ComponentPropsWithoutRef<'code'>;
 
 const markdownComponents: Components = {
-  a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" className="text-purple-500 dark:text-purple-400 hover:underline"/>,
+  a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" className="text-accentBlue-500 dark:text-accentBlue-400 hover:underline"/>,
   p: ({node, ...props}) => <p {...props} className="mb-2 last:mb-0" />,
   ol: ({node, ...props}) => <ol {...props} className="list-decimal list-inside ml-4" />,
   ul: ({node, ...props}) => <ul {...props} className="list-disc list-inside ml-4" />,
@@ -33,20 +30,17 @@ const markdownComponents: Components = {
   strong: ({node, ...props}) => <strong {...props} className="font-semibold" />,
   code: ({ node, inline, className, children, ...props }: CodeRendererProps) => {
     if (inline) {
-      // Inline code
       return (
         <code
-          className={`bg-slate-200 dark:bg-gray-600 px-1 py-0.5 rounded-sm text-xs ${className || ''}`.trim()}
-          {...props} // Spread other HTML attributes
+          className={`bg-slate-200 dark:bg-slate-600 px-1 py-0.5 rounded-sm text-xs ${className || ''}`.trim()}
+          {...props}
         >
           {children}
         </code>
       );
     } else {
-      // Block code
-      // className here is e.g. "language-js" or undefined if no language specified
       return (
-        <pre className="bg-slate-100 dark:bg-gray-800 p-2 rounded-md overflow-x-auto my-2 text-xs">
+        <pre className="bg-slate-100 dark:bg-slate-800 p-2 rounded-md overflow-x-auto my-2 text-xs">
           <code className={className} {...props}>
             {children}
           </code>
@@ -64,8 +58,8 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
 }) => {
   const isUser = message.role === ChatRole.USER;
   const bubbleClasses = isUser
-    ? 'bg-purple-600 dark:bg-purple-700 text-white self-end ml-auto'
-    : 'bg-white dark:bg-gray-700 text-slate-800 dark:text-gray-200 self-start mr-auto';
+    ? 'bg-accentBlue-600 dark:bg-accentBlue-700 text-white self-end ml-auto'
+    : 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 self-start mr-auto';
 
   const memoryHintText = "Puedes iniciar una nueva conversación para 'olvidar' el historial actual haciendo clic en el ícono de la papelera (Nuevo Chat). La gestión detallada de la memoria a largo plazo o el olvido selectivo de partes de la conversación actual no están implementados en esta interfaz.";
 
@@ -84,7 +78,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
     if (message.text) {
       navigator.clipboard.writeText(message.text)
         .then(() => {
-          onCopyText(); // Trigger feedback in parent
+          onCopyText(); 
         })
         .catch(err => console.error('Failed to copy text: ', err));
     }
@@ -102,14 +96,14 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
 
         {isUser && message.referenceImageUrls && message.referenceImageUrls.length > 0 && (
           <div className="mb-2">
-            <p className="text-xs text-purple-300 dark:text-purple-200 mb-1">Imágenes de referencia enviadas:</p>
+            <p className="text-xs text-accentBlue-200 dark:text-accentBlue-300 mb-1">Imágenes de referencia enviadas:</p>
             <div className="flex flex-wrap gap-2">
               {message.referenceImageUrls.map((url, index) => (
                 <img
                   key={index}
                   src={url}
                   alt={`Referencia ${index + 1}`}
-                  className="w-16 h-16 object-cover rounded-md border border-purple-400 dark:border-purple-500 cursor-pointer shadow-sm"
+                  className="w-16 h-16 object-cover rounded-md border border-accentBlue-400 dark:border-accentBlue-500 cursor-pointer shadow-sm"
                   onClick={() => onImageClick(url)}
                 />
               ))}
@@ -130,14 +124,14 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
             <div className="mt-2 flex space-x-2">
               <button
                 onClick={handleDownloadImage}
-                className="flex items-center text-xs px-2 py-1 bg-slate-200 dark:bg-gray-600 hover:bg-slate-300 dark:hover:bg-gray-500 rounded-md transition-colors text-slate-700 dark:text-gray-300"
+                className="flex items-center text-xs px-2 py-1 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 rounded-md transition-colors text-slate-700 dark:text-slate-300"
                 title="Descargar imagen"
               >
                 <DownloadIcon className="w-3 h-3 mr-1" /> Descargar
               </button>
               <button
                  onClick={() => onUseImageAsReference(message.imageUrl!)}
-                className="flex items-center text-xs px-2 py-1 bg-slate-200 dark:bg-gray-600 hover:bg-slate-300 dark:hover:bg-gray-500 rounded-md transition-colors text-slate-700 dark:text-gray-300"
+                className="flex items-center text-xs px-2 py-1 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 rounded-md transition-colors text-slate-700 dark:text-slate-300"
                 title="Usar como referencia"
               >
                 <PinIcon className="w-3 h-3 mr-1" /> Referencia
@@ -147,11 +141,11 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
         )}
 
         {message.text && (
-          <div className={`prose prose-sm dark:prose-invert max-w-none ${isUser ? 'text-white' : 'text-slate-800 dark:text-gray-200'} ${(message.referenceImageUrls && message.referenceImageUrls.length > 0 && isUser) || (message.imageUrl && !isUser) ? 'mt-2' : ''}`}>
+          <div className={`prose prose-sm dark:prose-invert max-w-none ${isUser ? 'text-white' : 'text-slate-800 dark:text-slate-200'} ${(message.referenceImageUrls && message.referenceImageUrls.length > 0 && isUser) || (message.imageUrl && !isUser) ? 'mt-2' : ''}`}>
              {!isUser && (
                 <button
                     onClick={handleCopyText}
-                    className="absolute top-2 right-2 p-1.5 text-slate-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-150 bg-white/50 dark:bg-gray-600/50 rounded-full"
+                    className="absolute top-2 right-2 p-1.5 text-slate-500 dark:text-slate-400 hover:text-accentBlue-600 dark:hover:text-accentBlue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-150 bg-white/50 dark:bg-slate-600/50 rounded-full"
                     title="Copiar texto"
                     aria-label="Copiar texto"
                 >
@@ -162,7 +156,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
               {message.text}
             </ReactMarkdown>
             {message.text.includes("gestión detallada de la memoria") && !isUser && (
-              <div className="mt-3 pt-2 border-t border-slate-200 dark:border-gray-600 flex items-start text-xs text-slate-500 dark:text-gray-400">
+              <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-600 flex items-start text-xs text-slate-500 dark:text-slate-400">
                 <BookIcon className="w-4 h-4 mr-2 flex-shrink-0 mt-0.5" />
                 <span>{memoryHintText}</span>
               </div>
@@ -173,7 +167,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
         {message.isError && (
           <p className="text-red-500 dark:text-red-400 text-sm mt-1">Error: {message.text || "Ocurrió un error."}</p>
         )}
-         <div className={`text-xs mt-2 ${isUser ? 'text-purple-300 dark:text-purple-200 text-right' : 'text-slate-500 dark:text-gray-400 text-left'}`}>
+         <div className={`text-xs mt-2 ${isUser ? 'text-accentBlue-200 dark:text-accentBlue-300 text-right' : 'text-slate-500 dark:text-slate-400 text-left'}`}>
           {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
