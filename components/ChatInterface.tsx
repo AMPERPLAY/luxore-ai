@@ -10,6 +10,7 @@ import { getChatInstance, sendMessageStream, generateImage, startNewChat, extrac
 import { IMAGE_CONFIRMATION_REGEX, VIDEO_PLAN_CONFIRMATION_REGEX, MULTI_IMAGE_CONFIRMATION_REGEX, AI_NAME } from '../constants';
 import { Chat, GenerateContentResponse, Part } from '@google/genai';
 import { ImageIcon } from './icons/ImageIcon';
+import { MicrophoneIcon } from './icons/MicrophoneIcon';
 
 interface ImageReferencePreviewProps {
   imageData: { file: File, dataUrl: string };
@@ -40,6 +41,7 @@ interface ChatInterfaceProps {
 }
 
 const MAX_TEXTAREA_HEIGHT = 150; 
+const SPEECH_LANG = 'es-ES'; // Language for speech recognition
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMessage, chatContext, onAiMessageGenerated }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -58,10 +60,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
   
   const [showCopyFeedback, setShowCopyFeedback] = useState(false);
   const [showReferenceFeedback, setShowReferenceFeedback] = useState(false);
+  const [showSpeechErrorFeedback, setShowSpeechErrorFeedback] = useState<string | null>(null);
+
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Speech Recognition state and refs
+  const [isRecording, setIsRecording] = useState(false);
+  const [speechApiSupported, setSpeechApiSupported] = useState(true);
+  const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
 
 
   const adjustTextareaHeight = useCallback(() => {
@@ -76,6 +85,101 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
   useEffect(() => {
     adjustTextareaHeight();
   }, [inputValue, adjustTextareaHeight]);
+
+  useEffect(() => {
+    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionAPI) {
+      setSpeechApiSupported(false);
+      console.warn("Web Speech API no es soportada por este navegador.");
+    } else {
+       speechRecognitionRef.current = new SpeechRecognitionAPI();
+       const recognition = speechRecognitionRef.current;
+       if (!recognition) return;
+
+       recognition.continuous = true;
+       recognition.interimResults = true;
+       recognition.lang = SPEECH_LANG;
+
+       recognition.onstart = () => {
+         setIsRecording(true);
+         setShowSpeechErrorFeedback(null);
+       };
+
+       recognition.onresult = (event: SpeechRecognitionEvent) => {
+         let interimTranscript = '';
+         let finalTranscript = '';
+         for (let i = event.resultIndex; i < event.results.length; ++i) {
+           if (event.results[i].isFinal) {
+             finalTranscript += event.results[i][0].transcript;
+           } else {
+             interimTranscript += event.results[i][0].transcript;
+           }
+         }
+         
+         // Update input value with final transcript portions
+         if (finalTranscript.trim()) {
+           setInputValue(prev => (prev.trim() ? prev + ' ' : '') + finalTranscript.trim());
+         }
+         // Optionally, you could show interimTranscript in a temporary placeholder or similar
+         // For now, focusing on final results to avoid complex state management with textarea
+       };
+
+       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+         console.error('Error de reconocimiento de voz:', event.error);
+         let errorMsg = `Error de reconocimiento: ${event.error}`;
+         if (event.error === 'not-allowed') {
+           errorMsg = "Permiso de micrófono denegado. Por favor, habilítalo en la configuración de tu navegador.";
+         } else if (event.error === 'no-speech') {
+           errorMsg = "No se detectó voz. Intenta hablar más claro o revisa tu micrófono.";
+         } else if (event.error === 'audio-capture') {
+           errorMsg = "Problema con el micrófono. Asegúrate que está conectado y funcionando.";
+         } else if (event.error === 'network') {
+            errorMsg = "Error de red durante el reconocimiento de voz. Verifica tu conexión.";
+         }
+         setShowSpeechErrorFeedback(errorMsg);
+         setIsRecording(false);
+       };
+
+       recognition.onend = () => {
+         setIsRecording(false);
+       };
+    }
+    // Cleanup function
+    return () => {
+      if (speechRecognitionRef.current && isRecording) {
+        speechRecognitionRef.current.stop();
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Ran only once on mount
+
+  const handleToggleRecording = () => {
+    if (!speechApiSupported) {
+      setShowSpeechErrorFeedback("Tu navegador no soporta la API de reconocimiento de voz.");
+      return;
+    }
+    if (!speechRecognitionRef.current) return;
+
+    if (isRecording) {
+      speechRecognitionRef.current.stop();
+    } else {
+      try {
+        speechRecognitionRef.current.start();
+      } catch (e: any) {
+         // This can happen if start() is called too soon after stop() or on an already started instance.
+         console.error("Error al iniciar reconocimiento:", e);
+         if (e.name === 'InvalidStateError') {
+             // Try to reset by stopping first if it thinks it's running
+             speechRecognitionRef.current.stop(); // This will trigger onend, which sets isRecording to false
+             // Then we can attempt to start again after a short delay or let the user click again.
+             // For now, just log and let onend handle setting isRecording.
+         } else {
+            setShowSpeechErrorFeedback("No se pudo iniciar la grabación. Intenta de nuevo.");
+         }
+      }
+    }
+  };
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -119,11 +223,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
     setReferenceImagesData([]);
     setInputValue(''); 
     setChatSession(startNewChat());
+    if (speechRecognitionRef.current && isRecording) { // Stop recording on new chat
+      speechRecognitionRef.current.stop();
+    }
     if (onAiMessageGenerated) {
         onAiMessageGenerated(newGreetingMsg);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialGreetingMessage, chatContext]);
+  }, [initialGreetingMessage, chatContext, isRecording]);
 
   const handleImageClick = (imageUrl: string) => {
     setModalImageUrl(imageUrl);
@@ -138,6 +245,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
   const triggerReferenceFeedback = () => {
     setShowReferenceFeedback(true);
     setTimeout(() => setShowReferenceFeedback(false), 2500);
+  };
+  
+  const triggerSpeechErrorFeedback = (message: string) => {
+    setShowSpeechErrorFeedback(message);
+    setTimeout(() => setShowSpeechErrorFeedback(null), 4000);
   };
 
   const dataUrlToFile = async (dataUrl: string, filename: string): Promise<File> => {
@@ -219,9 +331,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
         }
       }
     }
-    if (imagePastedThisEvent) {
-        // event.preventDefault(); // Uncomment if you want to prevent text pasting if an image was pasted.
-    }
+    // if (imagePastedThisEvent) { // We want to allow pasting text even if an image was pasted.
+        // event.preventDefault(); 
+    // }
   }, [referenceImagesData]);
 
 
@@ -259,6 +371,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
 
   const processUserMessage = async (userMessageText: string) => {
     if (!chatSession) return;
+
+    if (isRecording && speechRecognitionRef.current) { // Stop recording before sending
+      speechRecognitionRef.current.stop();
+    }
 
     const userMessageId = `user-${Date.now()}`;
     const userMessageTimestamp = new Date();
@@ -467,6 +583,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
           ¡Imagen añadida como referencia!
         </div>
       )}
+      {showSpeechErrorFeedback && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-md shadow-lg z-50 text-sm max-w-md text-center">
+          {showSpeechErrorFeedback}
+        </div>
+      )}
       <div className="flex-grow overflow-y-auto mb-4 pr-2 space-y-4 p-4 md:p-2">
         {messages.map((msg) => (
           <MessageBubble 
@@ -488,14 +609,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
       )}
       {pendingMultiImageDescription && (
         <div className="mb-2 mx-4 md:mx-2 p-3 bg-indigo-100 dark:bg-indigo-900/50 border border-indigo-300 dark:border-indigo-700 rounded-lg text-sm text-indigo-700 dark:text-indigo-200">
-          {/* Note: Indigo is kept for multi-image for differentiation, could be accentBlue too */}
           <p><span className="font-semibold">{AI_NAME}</span> está esperando tu confirmación para generar la imagen combinada: "<em>{pendingMultiImageDescription}</em>"</p>
           <p>Responde "Sí" o "No".</p>
         </div>
       )}
       {pendingVideoPlanDescription && (
         <div className="mb-2 mx-4 md:mx-2 p-3 bg-teal-100 dark:bg-teal-900/50 border border-teal-300 dark:border-teal-700 rounded-lg text-sm text-teal-700 dark:text-teal-200">
-          {/* Note: Teal is kept for video plan for differentiation, could be accentBlue too */}
           <p><span className="font-semibold">{AI_NAME}</span> está esperando tu confirmación para generar el plan de video: "<em>{pendingVideoPlanDescription}</em>"</p>
           <p>Responde "Sí" o "No".</p>
         </div>
@@ -523,6 +642,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
           className="p-2 text-slate-500 dark:text-slate-400 hover:text-accentBlue-600 dark:hover:text-accentBlue-400 transition-colors duration-150 self-center"
           title="Iniciar Nuevo Chat"
           aria-label="Iniciar Nuevo Chat"
+          disabled={isLoading}
         >
           <TrashIcon className="w-6 h-6" />
         </button>
@@ -546,6 +666,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
         >
             <ImageIcon className="w-6 h-6" />
         </button>
+        
+        <button
+            type="button"
+            onClick={handleToggleRecording}
+            className={`p-2 transition-colors duration-150 self-center ${
+                isRecording 
+                ? 'text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-500' 
+                : 'text-slate-500 dark:text-slate-400 hover:text-accentBlue-600 dark:hover:text-accentBlue-400'
+            } ${!speechApiSupported ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={isRecording ? "Detener grabación" : "Iniciar grabación de voz"}
+            aria-label={isRecording ? "Detener grabación de voz" : "Iniciar grabación de voz"}
+            disabled={!speechApiSupported || isLoading}
+        >
+            <MicrophoneIcon className="w-6 h-6" />
+        </button>
 
         <textarea
           ref={textareaRef}
@@ -553,7 +688,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialGreetingMes
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleTextareaKeyDown}
           onPaste={handlePaste}
-          placeholder={referenceImagesData.length > 0 ? `Describe cómo usar las imágenes para ${AI_NAME}...` : `Escribe tu mensaje a ${AI_NAME}...`}
+          placeholder={isRecording ? "Escuchando..." : (referenceImagesData.length > 0 ? `Describe cómo usar las imágenes para ${AI_NAME}...` : `Escribe tu mensaje a ${AI_NAME}...`)}
           className="flex-grow p-3 bg-slate-100 dark:bg-slate-600 text-slate-800 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-accentBlue-500 focus:outline-none placeholder-slate-500 dark:placeholder-slate-400 resize-none overflow-hidden min-h-[44px]"
           rows={1}
           style={{ maxHeight: `${MAX_TEXTAREA_HEIGHT}px` }}

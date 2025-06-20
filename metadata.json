@@ -1,6 +1,6 @@
+
 {
-  "name": "Luxoré AI",
-  "description": "Experimenta la IA de élite con Luxoré: generación avanzada de texto, imágenes impactantes, planificación profesional y asistencia académica, todo en un diseño de lujo.",
-  "requestFramePermissions": [],
-  "prompt": ""
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }
